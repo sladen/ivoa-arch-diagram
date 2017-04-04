@@ -15,7 +15,7 @@ CENTRE = 356.436
 def x(position, index=0): return position / MEDIABOX_PSPOINT[index]
 def y(position, index=1): return position / MEDIABOX_PSPOINT[index]
 
-def main():
+def main(level=1):
     # generate + set size
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(*MEDIABOX_INCHES)
@@ -25,7 +25,7 @@ def main():
     font.set_weight('bold')
     font.set_size(18)
     fig.text(x(22.680), y(503.280),
-             'LEVEL 0',
+             'LEVEL {:d}'.format(level),
              fontproperties=font,
              color='red')
     fig.text(x(CENTRE), y(452.284),
@@ -49,23 +49,122 @@ def main():
              fontproperties=font,
              horizontalalignment='center')
 
+    font.set_size(18)
     # left and right
-    fig.text(x(130), y(260),
-             '\n'.join('FINDING'),
+    if level == 0:
+        left_text = '\n'.join('FINDING')
+    elif level == 1:
+        left_text = '\n'.join('REGISTRY')
+        fig.text(x(130), y(260),
+             left_text,
              fontproperties=font,
              horizontalalignment='center',
              verticalalignment='center')
+
     # righthand side is slightly shifted up
-    fig.text(x(584), y(260+(321.884-316.300)),
-             '\n'.join('GETTING'),
-             fontproperties=font,
-             horizontalalignment='center',
-             verticalalignment='center')
-             
+    if level == 0:
+        fig.text(x(584), y(260+(321.884-316.300)),
+                 '\n'.join('GETTING'),
+                 linespacing=1.33,
+                 fontproperties=font,
+                 horizontalalignment='center',
+                 verticalalignment='center')
+    elif level == 1:
+        fig.text(x(572), y(260),
+                 '\n'.join('DATA ACCESS'),
+                 fontproperties=font,
+                 linespacing=1.33,
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(601), y(260),
+                 '\n'.join('PROTOCOLS'),
+                 fontproperties=font,
+                 linespacing=1.33,
+                 horizontalalignment='center',
+                 verticalalignment='center')
+
+    # italics
+    if level == 1:
+        font2 = matplotlib.font_manager.FontProperties()
+        font2.set_family('Arial')
+        font2.set_weight('bold')
+        font2.set_style('italic')
+        font2.set_size(16)
+
+        # User Layer
+        fig.text(x(178.5), y(434),
+                 'Browser Based\nApps',
+                 fontproperties=font2,
+                 linespacing=1.2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(CENTRE), y(428),
+                 'Desktop Apps',
+                 fontproperties=font2,
+                 linespacing=1.2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(535.7), y(434),
+                 'Script Based\nApps',
+                 fontproperties=font2,
+                 linespacing=1.2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+
+        # Resource Layer
+        fig.text(x(181), y(72),
+                 'Storage',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(CENTRE), y(84),
+                 'Data and Metadata Collection',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(545), y(72),
+                 'Computation',
+                 fontproperties=font2,
+                 linespacing=1.2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+
+        # VO Core
+        fig.text(x(CENTRE), y(334),
+                 'VO Query\nLanguages',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(485), y(263),
+                 'Data\nModels',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(CENTRE), y(186),
+                 'Formats',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
+        fig.text(x(243), y(268),
+                 'Semantics',
+                 fontproperties=font2,
+                 style='italic',
+                 horizontalalignment='center',
+                 verticalalignment='center')
 
 
 
     font.set_size(12)
+    font.set_style('normal')
     fig.text(x(176.490), y(521.418),
              'USERS',
              fontproperties=font,
