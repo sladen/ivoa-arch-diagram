@@ -6,8 +6,8 @@
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.backends.backend_pdf
 import io
-
 MEDIABOX_PSPOINT = (720., 540.) # 10 inch * 7.5 inch == 254mm * 190.5 mm
 MEDIABOX_INCHES = [dimension / 72. for dimension in MEDIABOX_PSPOINT]
 CENTRE = 356.436
@@ -15,15 +15,74 @@ CENTRE = 356.436
 def x(position, index=0): return position / MEDIABOX_PSPOINT[index]
 def y(position, index=1): return position / MEDIABOX_PSPOINT[index]
 
-def main(level=1):
+# inspiration http://www.programcreek.com/python/example/76380/matplotlib.font_manager.findfont
+# There seems to be a long-standing bug/issue that the matplotlib font cache in:
+# ~/.matplotlib/fontList.cache is never updated, so fonts installed after the
+# first-time executation of matplotlib will never be found.
+# SVN revision 8712 appears to have been the fix for this,
+# which calls adds a new internal _rebuild() method, that
+# in-turn uses pickle_dump() of an object into the cache file.
+# https://sourceforge.net/p/matplotlib/mailman/matplotlib-checkins/thread/E1Oy9DR-0000BP-Of%40sfp-svn-5.v30.ch3.sourceforge.com/#msg26202308
+# http://matplotlib.svn.sourceforge.net/matplotlib/?rev=8712&view=rev
+# One possibility to add a clean workaround; the other is just
+# to manually run:
+#   rm ~/.matplotlib/fontList.cache
+# and then on the next run the now-missing cache will be rebuilt...
+#
+
+def find_matplotlib_font(**kw):
+    prop = matplotlib.font_manager.FontProperties(**kw)
+    path = matplotlib.font_manager.findfont(prop, fallback_to_default=False)
+    font = matplotlib.font_manager.FontProperties(fname=path)
+    # finding of fonts is based on the following
+    # stretch -> condensed
+    # variant -> small-caps
+    # weight -> bold
+    # slant -> italic
+    # size -> relative size (textual) or PS point size (numeric)
+    # however ... requesting the size/etc via findfont, doesn't cause the
+    # size to be set it requires an explicit ".set_size(NN)"..
+    if kw.has_key('style'): font.set_style(kw['style'])
+    if kw.has_key('weight'): font.set_weight(kw['weight'])
+    if kw.has_key('variant'): font.set_variant(kw['variant'])
+    if kw.has_key('size'): font.set_size(kw['size'])
+    if kw.has_key('stretch'): font.set_stretch(kw['stretch'])
+    #print (font)
+    return font
+
+def main():
+    ringbinder = matplotlib.backends.backend_pdf.PdfPages('foobar.pdf')
+    render_ivoa_architecture_diagram(level=0, target=ringbinder)
+    render_ivoa_architecture_diagram(level=1, target=ringbinder)
+    render_ivoa_architecture_diagram(level=2, target=ringbinder)
+    #render_ivoa_architecture_diagram(level = 1, target=ringbinder)
+    #with open('foobar.pdf', 'wb') as diskfile:
+        #ramfile = io.BytesIO()
+        #ramfile.seek(0) # rewind to prepare for write at the beginning
+        #if True:
+        #    #with matplotlib.backends.backend_pdf.PdfPages('hello.pdf') as ringbinder:
+        #   render_ivoa_architecture_diagram(level = 0, target=ringbinder)
+        #    render_ivoa_architecture_diagram(level = 1, target=ringbinder)
+        #ramfile.seek(0) # rewind to prepare for reading from the beginning
+        #pdfstream = ramfile.getvalue() # extract the giant string
+        #diskfile.write(pdfstream)
+    ringbinder.close()
+    print ringbinder._file
+    print dir(ringbinder)
+
+
+def render_ivoa_architecture_diagram(level=1, target=None):
+    matplotlib.rcParams['font.family'] = 'Arial'
+    # Only available on newer versions, otherwise needs
+    # passing explicitly to '.savefig(..., transparent=True)'
+    if 'savefig.transparent' in matplotlib.rcParams.keys():
+        matplotlib.rcParams['savefig.transparent'] = True
+
     # generate + set size
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(*MEDIABOX_INCHES)
 
-    font = matplotlib.font_manager.FontProperties()
-    font.set_family('Arial')
-    font.set_weight('bold')
-    font.set_size(18)
+    font = find_matplotlib_font(family='Arial', style='normal', variant='normal', weight='bold', size=18)
     fig.text(x(22.680), y(503.280),
              'LEVEL {:d}'.format(level),
              fontproperties=font,
@@ -49,13 +108,14 @@ def main(level=1):
              fontproperties=font,
              horizontalalignment='center')
 
-    font.set_size(18)
+    font = find_matplotlib_font(family='Arial', style='normal', variant='normal', weight='bold', size=18)
     # left and right
     if level == 0:
         left_text = '\n'.join('FINDING')
-    elif level == 1:
+    elif 1 <= level <= 2:
+        offset = {1: 0, 2: 130-51}[level]
         left_text = '\n'.join('REGISTRY')
-        fig.text(x(130), y(260),
+        fig.text(x(130 - offset), y(260),
              left_text,
              fontproperties=font,
              horizontalalignment='center',
@@ -69,14 +129,15 @@ def main(level=1):
                  fontproperties=font,
                  horizontalalignment='center',
                  verticalalignment='center')
-    elif level == 1:
-        fig.text(x(572), y(260),
+    elif 1 <= level <= 2:
+        offset = {1: 0, 2: 646-572.}[level]
+        fig.text(x(572 + offset), y(260),
                  '\n'.join('DATA ACCESS'),
                  fontproperties=font,
                  linespacing=1.33,
                  horizontalalignment='center',
                  verticalalignment='center')
-        fig.text(x(601), y(260),
+        fig.text(x(601 + offset), y(260),
                  '\n'.join('PROTOCOLS'),
                  fontproperties=font,
                  linespacing=1.33,
@@ -84,33 +145,26 @@ def main(level=1):
                  verticalalignment='center')
 
     # italics
-    if level == 1:
-        font2 = matplotlib.font_manager.FontProperties()
-        font2.set_family('Arial')
-        font2.set_weight('bold')
-        font2.set_style('italic')
-        font2.set_size(16)
+    if 1 <= level <= 2:
+        font2 = find_matplotlib_font(family='Arial', style='italic', variant='normal', weight='bold', size=16)
 
         # User Layer
         fig.text(x(178.5), y(434),
                  'Browser Based\nApps',
                  fontproperties=font2,
                  linespacing=1.2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(CENTRE), y(428),
                  'Desktop Apps',
                  fontproperties=font2,
                  linespacing=1.2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(535.7), y(434),
                  'Script Based\nApps',
                  fontproperties=font2,
                  linespacing=1.2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
 
@@ -118,20 +172,17 @@ def main(level=1):
         fig.text(x(181), y(72),
                  'Storage',
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(CENTRE), y(84),
                  'Data and Metadata Collection',
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(545), y(72),
                  'Computation',
                  fontproperties=font2,
                  linespacing=1.2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
 
@@ -139,32 +190,27 @@ def main(level=1):
         fig.text(x(CENTRE), y(334),
                  'VO Query\nLanguages',
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
-        fig.text(x(485), y(263),
-                 'Data\nModels',
+        offset = {1: 0, 2: 276-263}[level]
+        fig.text(x(485), y(263 + offset),
+                 'Data Models'.replace(' ', '\n'),
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(CENTRE), y(186),
                  'Formats',
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
         fig.text(x(243), y(268),
                  'Semantics',
                  fontproperties=font2,
-                 style='italic',
                  horizontalalignment='center',
                  verticalalignment='center')
 
 
-
-    font.set_size(12)
-    font.set_style('normal')
+    font = find_matplotlib_font(family='Arial', style='normal', variant='normal', weight='bold', size=12)
     fig.text(x(176.490), y(521.418),
              'USERS',
              fontproperties=font,
@@ -178,7 +224,7 @@ def main(level=1):
              fontproperties=font,
              color='black')
 
-    font.set_size(10)
+    font = find_matplotlib_font(family='Arial', style='normal', variant='normal', weight='bold', size=10)
     fig.text(x(58.149), y(29.478),
              '20100525',
              fontproperties=font,
@@ -236,17 +282,23 @@ def main(level=1):
                 linestyle='dashed', transform=fig.transFigure,
                 figure=fig)])
 
-
-
-
     # output
-    with open('foobar.pdf', 'wb') as pdf:
-        f = io.BytesIO()
-        fig.savefig(f, format='pdf')
-        f.seek(0)
-        f.seek(0)
-        pdfstream = f.getvalue()
-        pdf.write(pdfstream)
+    if target:
+        print 'hello world'
+        target.savefig(fig, transparent=True)
+        plt.close()
+    return
+
+    if False:
+        with open('foobar.pdf', 'wb') as pdf:
+            f = io.BytesIO()
+            fig.savefig(f, format='pdf', transparent=True)
+            fig.savefig(f, format='pdf')
+            f.seek(0)
+            f.seek(0)
+            pdfstream = f.getvalue()
+            pdf.write(pdfstream)
+        
 
 if __name__=='__main__':
     main()
