@@ -67,8 +67,8 @@ def main():
         #pdfstream = ramfile.getvalue() # extract the giant string
         #diskfile.write(pdfstream)
     ringbinder.close()
-    print ringbinder._file
-    print dir(ringbinder)
+    import subprocess
+    subprocess.call(['pdftk', 'VOArchitecture-export-as-PDF.pdf','multistamp','foobar.pdf','output','both.pdf'])
 
 
 def render_ivoa_architecture_diagram(level=1, target=None):
@@ -113,17 +113,19 @@ def render_ivoa_architecture_diagram(level=1, target=None):
     if level == 0:
         left_text = '\n'.join('FINDING')
     elif 1 <= level <= 2:
-        offset = {1: 0, 2: 130-51}[level]
+        offset = {1: 0, 2: 74}[level]
         left_text = '\n'.join('REGISTRY')
-        fig.text(x(130 - offset), y(260),
+        fig.text(x(129.5 - offset), y(264.5),
              left_text,
              fontproperties=font,
              horizontalalignment='center',
+             linespacing=1.31,
+             color='pink',
              verticalalignment='center')
 
     # righthand side is slightly shifted up
     if level == 0:
-        fig.text(x(584), y(260+(321.884-316.300)),
+        fig.text(x(584), y(260+5),
                  '\n'.join('GETTING'),
                  linespacing=1.33,
                  fontproperties=font,
@@ -284,7 +286,6 @@ def render_ivoa_architecture_diagram(level=1, target=None):
 
     # output
     if target:
-        print 'hello world'
         target.savefig(fig, transparent=True)
         plt.close()
     return
